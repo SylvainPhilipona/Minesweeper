@@ -155,21 +155,12 @@ namespace Minesweeper
             return minedNeighbours;
         }
 
-        private (int X, int Y) GetIndex(Button btn)
+        private void Demine(Button cell)
         {
-            for (int y = 0; y < GRID_HEIGHT; y++)
-            {
-                for (int x = 0; x < GRID_WIDTH; x++)
-                {
-                    if (grid[y, x] == btn)
-                    {
-                        return (x, y);
-                    }
-                }
-            }
 
-            return (-1, -1);
         }
+
+        
 
 
 
@@ -189,18 +180,59 @@ namespace Minesweeper
                 // Generate the mines but the first clicked cell will never be mined
                 GenerateMines(cell);
 
-
                 firstClick = false;
             }
+            else
+            {
+                // Left click
+                if (e.Button == MouseButtons.Left)
+                {
+                    // If the cell is flagged do nothing else demine the cell
+                    if (cell.Text != FLAG_CELL_TEXT)
+                    {
+                        // If the user clicked on a mined cell
+                        if ((string)cell.Tag == MINED_CELL_TAG)
+                        {
+                            MessageBox.Show("PERDU !");
+                        }
+                        // Demine
+                        else
+                        {
+                            Demine(cell);
+                        }
+                    }
+                }
+                // Right click
+                else if(e.Button == MouseButtons.Right)
+                {
+                    // Flag or unflag the cell
+                    if(cell.Text == FLAG_CELL_TEXT)
+                    {
+                        cell.Text = "";
+                    }
+                    else
+                    {
+                        cell.Text = FLAG_CELL_TEXT;
+                    }
+                }
+            }
+        }
 
 
+        private (int X, int Y) GetIndex(Button btn)
+        {
+            for (int y = 0; y < GRID_HEIGHT; y++)
+            {
+                for (int x = 0; x < GRID_WIDTH; x++)
+                {
+                    if (grid[y, x] == btn)
+                    {
+                        return (x, y);
+                    }
+                }
+            }
 
-
-
-            //cell.Text = CountMinesAround(cell).ToString();
-
-
-            //MessageBox.Show(cell.Tag.ToString());
+            return (-1, -1);
         }
 
         private void btnStartGenerations_Click(object sender, EventArgs e)
