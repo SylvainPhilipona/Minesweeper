@@ -1,34 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Minesweeper
 {
     public partial class Game : Form
     {
+        ///// CONSTANTS /////
         private const int GRID_WIDTH = 25;
         private const int GRID_HEIGHT = 25;
         private const byte PERCENTAGE_OF_MINES = 15;
         private const string MINED_CELL_TAG = "mined";
         private const string SAFE_CELL_TAG = "safe";
         private const string DEMINED_CELL_TAG = "demined";
-        private readonly Color MINED_CELL_COLOR = Color.Yellow;
+        private readonly Color MINED_CELL_COLOR = Color.Gray;
         private readonly Color SAFE_CELL_COLOR = Color.Gray;
         private readonly Color DEMINED_CELL_COLOR = Color.LightGray;
         private const string FLAG_CELL_TEXT = "🚩";
 
+        ///// VARIABLES /////
         private int buttonWidth = 0;
         private int buttonHeight = 0;
         private int fontSize = 0;
         private int nbMines = 0;
         private bool firstClick = true;
+        private bool win = false;
 
+        ///// OBJECTS /////
         private Button[,] grid;
 
 
@@ -46,6 +45,7 @@ namespace Minesweeper
             fontSize = (buttonWidth + buttonHeight) / 6;
             nbMines = 0;
             firstClick = true;
+            win = false;
 
             // Reset and generate the grid
             panContainer.Controls.Clear();
@@ -79,9 +79,6 @@ namespace Minesweeper
                     grid[y, x] = btn;
                 }
             }
-
-            // Generate the mines
-            //GenerateMines();
         }
 
         private void GenerateMines(Button safeCell)
@@ -136,19 +133,27 @@ namespace Minesweeper
             return minedNeighbours;
         }
 
+        private void DemineSingle(Button cell)
+        {
+            // Demine the cell
+            cell.Tag = DEMINED_CELL_TAG;
+            cell.BackColor = DEMINED_CELL_COLOR;
+            cell.FlatAppearance.BorderColor = DEMINED_CELL_COLOR;
+        }
+
         private void Demine(Button cell)
         {
             // Get all neighbours
             List<Button> neighboursCells = GetNeighbours(cell);
 
-            foreach(Button neighbour in neighboursCells)
+            // Go trough all cells neighbours
+            foreach (Button neighbour in neighboursCells)
             {
-                if((string)neighbour.Tag == SAFE_CELL_TAG)
+                // Check if the neighbour is safe
+                if ((string)neighbour.Tag == SAFE_CELL_TAG)
                 {
                     // Demine the cell
-                    neighbour.Tag = DEMINED_CELL_TAG;
-                    neighbour.BackColor = DEMINED_CELL_COLOR;
-                    neighbour.FlatAppearance.BorderColor = DEMINED_CELL_COLOR;
+                    DemineSingle(neighbour);
 
                     // Count the number of mines around
                     int minesAround = CountMinesAround(neighbour);
@@ -165,11 +170,10 @@ namespace Minesweeper
                         neighbour.Text = minesAround.ToString();
                     }
                 }
-                
             }
-
-
         }
+
+        
 
         private List<Button> GetNeighbours(Button cell)
         {
@@ -201,17 +205,32 @@ namespace Minesweeper
                 }
             }
 
-
             return neighboursCells;
         }
 
+        private int GetCellsCountByTag(string tag)
+        {
+            int count = 0;
+            foreach(Button cell in panContainer.Controls)
+            {
+                if((string)cell.Tag == tag)
+                {
+                    count++;
+                }
+            }
 
-
-
+            return count;
+        }
 
 
         private void Cell_Click(object sender, MouseEventArgs e)
         {
+            // Check if the user as already won
+            if (win)
+            {
+                return;
+            }
+
             // Cast the clicked cell as a button
             Button cell = (Button)sender;
 
@@ -219,14 +238,18 @@ namespace Minesweeper
             if (firstClick)
             {
                 // Set the cell to demined
-                cell.Tag = DEMINED_CELL_TAG;
-                cell.BackColor = DEMINED_CELL_COLOR;
-                cell.FlatAppearance.BorderColor = DEMINED_CELL_COLOR;
+                DemineSingle(cell);
 
                 // Generate the mines but the first clicked cell will never be mined
                 GenerateMines(cell);
-
                 Demine(cell);
+
+                // Display the number of mines around if it has at least one
+                int minesAround = CountMinesAround(cell);
+                if (minesAround > 0)
+                {
+                    cell.Text = minesAround.ToString();
+                }
 
                 firstClick = false;
             }
@@ -241,10 +264,13 @@ namespace Minesweeper
                         // If the user clicked on a mined cell
                         if ((string)cell.Tag == MINED_CELL_TAG)
                         {
+                            ///// GAME OVER /////
+
                             MessageBox.Show("PERDU !");
+                            Init(null, null);
                         }
                         // Demine
-                        else
+                        else if((string)cell.Tag == SAFE_CELL_TAG)
                         {
                             // Display the number of mines around if it has at least one
                             int minesAround = CountMinesAround(cell);
@@ -254,15 +280,13 @@ namespace Minesweeper
                             }
 
                             // Demine the cell and it's neighbours
-                            cell.Tag = DEMINED_CELL_TAG;
-                            cell.BackColor = DEMINED_CELL_COLOR;
-                            cell.FlatAppearance.BorderColor = DEMINED_CELL_COLOR;
+                            DemineSingle(cell);
                             Demine(cell);
                         }
                     }
                 }
                 // Right click
-                else if(e.Button == MouseButtons.Right)
+                else if(e.Button == MouseButtons.Right && (string)cell.Tag != DEMINED_CELL_TAG)
                 {
                     // Flag or unflag the cell
                     if(cell.Text == FLAG_CELL_TEXT)
@@ -275,6 +299,16 @@ namespace Minesweeper
                     }
                 }
             }
+
+
+            ///// CHECK FOR WIN /////
+            // All demined cells + mines >= all cells
+            if(GetCellsCountByTag(DEMINED_CELL_TAG) + nbMines >= GRID_WIDTH * GRID_HEIGHT)
+            {
+                win = true;
+                MessageBox.Show("Gagné !!!!!!!!!!!!!!");
+            }
+
         }
 
 
@@ -292,14 +326,6 @@ namespace Minesweeper
             }
 
             return (-1, -1);
-        }
-
-        private void btnStartGenerations_Click(object sender, EventArgs e)
-        {
-            foreach(Button cell in panContainer.Controls)
-            {
-                cell.Text = CountMinesAround(cell).ToString();
-            }
         }
     }
 }
