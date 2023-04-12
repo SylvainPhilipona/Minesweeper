@@ -27,6 +27,7 @@ namespace Minesweeper
         private int buttonHeight = 0;
         private int fontSize = 0;
         private int nbMines = 0;
+        private bool firstClick = true;
 
         private Button[,] grid;
 
@@ -43,6 +44,8 @@ namespace Minesweeper
             buttonWidth = panContainer.Width / GRID_WIDTH;
             buttonHeight = panContainer.Height / GRID_HEIGHT;
             fontSize = (buttonWidth + buttonHeight) / 6;
+            nbMines = 0;
+            firstClick = true;
 
             // Reset and generate the grid
             panContainer.Controls.Clear();
@@ -78,10 +81,10 @@ namespace Minesweeper
             }
 
             // Generate the mines
-            GenerateMines();
+            //GenerateMines();
         }
 
-        private void GenerateMines()
+        private void GenerateMines(Button safeCell)
         {
             // Init the objects
             Random rnd = new Random();
@@ -96,8 +99,8 @@ namespace Minesweeper
                 // Generate a random index of the grid
                 int index = rnd.Next(0, GRID_WIDTH * GRID_HEIGHT);
 
-                // Check if the index has already be generated
-                if (!cellsMined.Contains(index))
+                // Check if the index has already be generated or if it's the first clicked cell
+                if (!cellsMined.Contains(index) && panContainer.Controls.GetChildIndex(safeCell) != index)
                 {
                     // Add to the list the generated index
                     cellsMined.Add(index);
@@ -175,8 +178,26 @@ namespace Minesweeper
             // Cast the clicked cell as a button
             Button cell = (Button)sender;
 
+            // Check if it's the first click
+            if (firstClick)
+            {
+                // Set the cell to demined
+                cell.Tag = DEMINED_CELL_COLOR;
+                cell.BackColor = DEMINED_CELL_COLOR;
+                cell.FlatAppearance.BorderColor = DEMINED_CELL_COLOR;
 
-            cell.Text = CountMinesAround(cell).ToString();
+                // Generate the mines but the first clicked cell will never be mined
+                GenerateMines(cell);
+
+
+                firstClick = false;
+            }
+
+
+
+
+
+            //cell.Text = CountMinesAround(cell).ToString();
 
 
             //MessageBox.Show(cell.Tag.ToString());
@@ -184,17 +205,7 @@ namespace Minesweeper
 
         private void btnStartGenerations_Click(object sender, EventArgs e)
         {
-            foreach(Button cell in panContainer.Controls)
-            {
-                cell.Text = CountMinesAround(cell).ToString();
-            }
-
-
-            return;
-            for (int i = 0; i < 10_000; i++)
-            {
-                GenerateMines();
-            }
+            
         }
     }
 }
