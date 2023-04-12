@@ -115,6 +115,59 @@ namespace Minesweeper
             }
         }
 
+        private int CountMinesAround(Button cell)
+        {
+            //X and Y index of the case in the list
+            (int X, int Y) index = GetIndex(cell);
+            int x = index.X;
+            int y = index.Y;
+
+            int minedNeighbours = 0;
+
+            //Coords to check (X, Y)
+            int[,] possibleCoords = new int[,] {
+            { -1, -1 }, { 0, -1 }, { 1, -1 }, // Top
+            { -1, 0 },              { 1, 0 }, // Middle
+            { -1, 1 }, { 0, 1 }, { 1, 1 } };  // Bottom
+
+            // Browse the coords array
+            for (int i = 0; i < possibleCoords.GetLength(0); i++)
+            {
+                // Get the 2 coords
+                int coordX = x + possibleCoords[i, 0];
+                int coordY = y + possibleCoords[i, 1];
+
+                // Check that the coords aren't outside the bounds of the array
+                if((coordX >= 0 && coordY >= 0) && (coordX < GRID_WIDTH && coordY < GRID_HEIGHT))
+                {
+                    // Check if the mined isn't safe
+                    if((string)grid[coordY, coordX].Tag != SAFE_CELL_TAG)
+                    {
+                        // Increment the mines counter
+                        minedNeighbours++;
+                    }
+                }
+            }
+
+            return minedNeighbours;
+        }
+
+        private (int X, int Y) GetIndex(Button btn)
+        {
+            for (int y = 0; y < GRID_HEIGHT; y++)
+            {
+                for (int x = 0; x < GRID_WIDTH; x++)
+                {
+                    if (grid[y, x] == btn)
+                    {
+                        return (x, y);
+                    }
+                }
+            }
+
+            return (-1, -1);
+        }
+
 
 
         private void Cell_Click(object sender, MouseEventArgs e)
@@ -123,11 +176,21 @@ namespace Minesweeper
             Button cell = (Button)sender;
 
 
-            MessageBox.Show(cell.Tag.ToString());
+            cell.Text = CountMinesAround(cell).ToString();
+
+
+            //MessageBox.Show(cell.Tag.ToString());
         }
 
         private void btnStartGenerations_Click(object sender, EventArgs e)
         {
+            foreach(Button cell in panContainer.Controls)
+            {
+                cell.Text = CountMinesAround(cell).ToString();
+            }
+
+
+            return;
             for (int i = 0; i < 10_000; i++)
             {
                 GenerateMines();
