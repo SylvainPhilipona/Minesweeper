@@ -120,18 +120,71 @@ namespace Minesweeper
 
         private int CountMinesAround(Button cell)
         {
+            int minedNeighbours = 0;
+
+            // Go trouhg all neighbours
+            foreach(Button neighbour in GetNeighbours(cell))
+            {
+                // Check if the mined isn't mined
+                if ((string)neighbour.Tag == MINED_CELL_TAG)
+                {
+                    // Increment the mines counter
+                    minedNeighbours++;
+                }
+            }
+
+            return minedNeighbours;
+        }
+
+        private void Demine(Button cell)
+        {
+            // Get all neighbours
+            List<Button> neighboursCells = GetNeighbours(cell);
+
+            foreach(Button neighbour in neighboursCells)
+            {
+                if((string)neighbour.Tag == SAFE_CELL_TAG)
+                {
+                    // Demine the cell
+                    neighbour.Tag = DEMINED_CELL_TAG;
+                    neighbour.BackColor = DEMINED_CELL_COLOR;
+                    neighbour.FlatAppearance.BorderColor = DEMINED_CELL_COLOR;
+
+                    // Count the number of mines around
+                    int minesAround = CountMinesAround(neighbour);
+
+                    // No mines around
+                    if (minesAround == 0)
+                    {
+                        // Repeat the process for it's neighbour
+                        Demine(neighbour);
+                    }
+                    else
+                    {
+                        // Display the number of mines around
+                        neighbour.Text = minesAround.ToString();
+                    }
+                }
+                
+            }
+
+
+        }
+
+        private List<Button> GetNeighbours(Button cell)
+        {
             //X and Y index of the case in the list
             (int X, int Y) index = GetIndex(cell);
             int x = index.X;
             int y = index.Y;
-
-            int minedNeighbours = 0;
 
             //Coords to check (X, Y)
             int[,] possibleCoords = new int[,] {
             { -1, -1 }, { 0, -1 }, { 1, -1 }, // Top
             { -1, 0 },              { 1, 0 }, // Middle
             { -1, 1 }, { 0, 1 }, { 1, 1 } };  // Bottom
+
+            List<Button> neighboursCells = new List<Button>();
 
             // Browse the coords array
             for (int i = 0; i < possibleCoords.GetLength(0); i++)
@@ -141,26 +194,19 @@ namespace Minesweeper
                 int coordY = y + possibleCoords[i, 1];
 
                 // Check that the coords aren't outside the bounds of the array
-                if((coordX >= 0 && coordY >= 0) && (coordX < GRID_WIDTH && coordY < GRID_HEIGHT))
+                if ((coordX >= 0 && coordY >= 0) && (coordX < GRID_WIDTH && coordY < GRID_HEIGHT))
                 {
-                    // Check if the mined isn't safe
-                    if((string)grid[coordY, coordX].Tag != SAFE_CELL_TAG)
-                    {
-                        // Increment the mines counter
-                        minedNeighbours++;
-                    }
+                    // Add the cell to the list
+                    neighboursCells.Add(grid[coordY, coordX]);
                 }
             }
 
-            return minedNeighbours;
+
+            return neighboursCells;
         }
 
-        private void Demine(Button cell)
-        {
 
-        }
 
-        
 
 
 
@@ -173,12 +219,14 @@ namespace Minesweeper
             if (firstClick)
             {
                 // Set the cell to demined
-                cell.Tag = DEMINED_CELL_COLOR;
+                cell.Tag = DEMINED_CELL_TAG;
                 cell.BackColor = DEMINED_CELL_COLOR;
                 cell.FlatAppearance.BorderColor = DEMINED_CELL_COLOR;
 
                 // Generate the mines but the first clicked cell will never be mined
                 GenerateMines(cell);
+
+                Demine(cell);
 
                 firstClick = false;
             }
@@ -198,6 +246,17 @@ namespace Minesweeper
                         // Demine
                         else
                         {
+                            // Display the number of mines around if it has at least one
+                            int minesAround = CountMinesAround(cell);
+                            if (minesAround > 0)
+                            {
+                                cell.Text = minesAround.ToString();
+                            }
+
+                            // Demine the cell and it's neighbours
+                            cell.Tag = DEMINED_CELL_TAG;
+                            cell.BackColor = DEMINED_CELL_COLOR;
+                            cell.FlatAppearance.BorderColor = DEMINED_CELL_COLOR;
                             Demine(cell);
                         }
                     }
@@ -237,7 +296,10 @@ namespace Minesweeper
 
         private void btnStartGenerations_Click(object sender, EventArgs e)
         {
-            
+            foreach(Button cell in panContainer.Controls)
+            {
+                cell.Text = CountMinesAround(cell).ToString();
+            }
         }
     }
 }
