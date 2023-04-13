@@ -161,6 +161,9 @@ namespace Minesweeper
                     // No mines around
                     if (minesAround == 0)
                     {
+                        // Clear the possible text of the cell
+                        neighbour.Text = "";
+
                         // Repeat the process for it's neighbour
                         Demine(neighbour);
                     }
